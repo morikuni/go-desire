@@ -1,10 +1,3 @@
-# go-desire
-
-Flexible validation library designed for testing.
-
-## Example
-
-```go
 package main
 
 import (
@@ -52,4 +45,3 @@ func Example() {
 	// name: expected one of [alice bob] but got david
 	// friends.1.id: expected 3 but got 4
 }
-```
