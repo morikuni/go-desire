@@ -1,13 +1,14 @@
 package desire
 
 import (
+	"fmt"
 	"reflect"
 	"strconv"
 
 	"github.com/google/go-cmp/cmp"
 )
 
-type Partial map[string]any
+type Partial map[any]any
 
 func (p Partial) Validate(ctx ValidationContext, got any) {
 	gotRV := reflect.ValueOf(got)
@@ -15,18 +16,29 @@ func (p Partial) Validate(ctx ValidationContext, got any) {
 	switch gotRV.Kind() {
 	case reflect.Map:
 		for k, v := range p {
-			indexValue := gotRV.MapIndex(reflect.ValueOf(k))
+			keyRV := reflect.ValueOf(k)
+			if !keyRV.Type().AssignableTo(gotRV.Type().Key()) {
+				ctx.WithField(fmt.Sprint(k)).Rejectf("expected key type %s but got %s", keyRV.Type(), gotRV.Type().Key())
+				continue
+			}
+			indexValue := gotRV.MapIndex(keyRV)
 			if !indexValue.IsValid() {
-				ctx.WithField(k).Rejectf("expected %v but undefined", v)
+				ctx.WithField(fmt.Sprint(k)).Rejectf("expected %v but undefined", v)
 				continue
 			}
 			tv := indexValue.Interface()
-			validate(ctx.WithField(k), tv, v)
+			validate(ctx.WithField(fmt.Sprint(k)), tv, v)
 		}
 	case reflect.Struct:
 		for k, v := range p {
-			tv := gotRV.FieldByName(k).Interface()
-			validate(ctx.WithField(k), tv, v)
+			switch k.(type) {
+			case string:
+				ks := k.(string)
+				tv := gotRV.FieldByName(ks).Interface()
+				validate(ctx.WithField(ks), tv, v)
+			default:
+				ctx.Reject("key type of Partial must be string for struct")
+			}
 		}
 	default:
 		ctx.Rejectf("expected map or struct but got %s", gotRV.Kind())

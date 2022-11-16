@@ -99,16 +99,31 @@ func TestDesire(t *testing.T) {
 			},
 		},
 		"Partial ng undefined key": {
-			map[string]any{
-				"a": 1,
-				"b": []int{1, 2, 3},
+			map[any]any{
+				"a":  1,
+				"b":  []int{1, 2, 3},
+				"10": 4,
 			},
 			Partial{
 				"b": []int{1, 2, 3},
 				"c": 2,
+				10:  4,
 			},
 			[]Rejection{
 				{Path{"c"}, "expected 2 but undefined"},
+				{Path{"10"}, "expected 4 but undefined"},
+			},
+		},
+		"Partial ng different key type": {
+			map[int]any{
+				1: 1,
+				2: []int{1, 2, 3},
+			},
+			Partial{
+				"c": 2,
+			},
+			[]Rejection{
+				{Path{"c"}, "expected key type string but got int"},
 			},
 		},
 		"List ok": {
