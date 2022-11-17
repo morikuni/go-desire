@@ -17,7 +17,7 @@ func (f ValidatorFunc) Validate(ctx ValidationContext, got any) {
 
 func Desire(got, desire any) []Rejection {
 	root := newRootValidationContext()
-	validate(root, got, desire)
+	Validate(root, got, desire)
 	return *root.rejections
 }
 

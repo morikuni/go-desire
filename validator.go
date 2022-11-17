@@ -27,7 +27,7 @@ func (p Partial) Validate(ctx ValidationContext, got any) {
 				continue
 			}
 			tv := indexValue.Interface()
-			validate(ctx.WithField(fmt.Sprint(k)), tv, v)
+			Validate(ctx.WithField(fmt.Sprint(k)), tv, v)
 		}
 	case reflect.Struct:
 		for k, v := range p {
@@ -35,7 +35,7 @@ func (p Partial) Validate(ctx ValidationContext, got any) {
 			case string:
 				ks := k.(string)
 				tv := gotRV.FieldByName(ks).Interface()
-				validate(ctx.WithField(ks), tv, v)
+				Validate(ctx.WithField(ks), tv, v)
 			default:
 				ctx.Reject("key type of Partial must be string for struct")
 			}
@@ -56,7 +56,7 @@ func (p Partial) Validate(ctx ValidationContext, got any) {
 					continue
 				}
 				tv := indexValue.Interface()
-				validate(ctx.WithField(strconv.Itoa(idx)), tv, v)
+				Validate(ctx.WithField(strconv.Itoa(idx)), tv, v)
 			default:
 				ctx.Reject("key type of Partial must be int for slice or array")
 			}
@@ -79,7 +79,7 @@ func (ls List) Validate(ctx ValidationContext, got any) {
 		}
 		for i := 0; i < min; i++ {
 			tv := gotRV.Index(i).Interface()
-			validate(ctx.WithField(strconv.Itoa(i)), tv, ls[i])
+			Validate(ctx.WithField(strconv.Itoa(i)), tv, ls[i])
 		}
 		for i := min; i < len(ls); i++ {
 			ctx.WithField(strconv.Itoa(i)).Rejectf("expected %v but undefined", ls[i])
@@ -93,7 +93,7 @@ func (ls List) Validate(ctx ValidationContext, got any) {
 	}
 }
 
-func validate(ctx ValidationContext, got, desire any) {
+func Validate(ctx ValidationContext, got, desire any) {
 	switch desire := desire.(type) {
 	case Validator:
 		desire.Validate(ctx, got)
