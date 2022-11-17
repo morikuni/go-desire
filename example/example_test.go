@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/morikuni/go-desire"
 )
@@ -34,14 +35,16 @@ func Example() {
 				"name": "charlie",
 			},
 		},
-	},
-	)
+	})
 
+	sort.Slice(rejections, func(i, j int) bool {
+		return rejections[i].Path.String() < rejections[j].Path.String()
+	})
 	for _, r := range rejections {
 		fmt.Println(r)
 	}
 
 	// Output:
-	// name: expected one of [alice bob] but got david
 	// friends.1.id: expected 3 but got 4
+	// name: expected one of [alice bob] but got david
 }

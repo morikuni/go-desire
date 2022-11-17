@@ -40,6 +40,27 @@ func (p Partial) Validate(ctx ValidationContext, got any) {
 				ctx.Reject("key type of Partial must be string for struct")
 			}
 		}
+	case reflect.Slice, reflect.Array:
+		gotLen := gotRV.Len()
+		for k, v := range p {
+			switch k.(type) {
+			case int:
+				idx := k.(int)
+				if idx < 0 || idx >= gotLen {
+					ctx.WithField(fmt.Sprint(k)).Rejectf("index out of range for size %d", gotLen)
+					continue
+				}
+				indexValue := gotRV.Index(idx)
+				if !indexValue.IsValid() {
+					ctx.WithField(fmt.Sprint(k)).Rejectf("expected %v but undefined", v)
+					continue
+				}
+				tv := indexValue.Interface()
+				validate(ctx.WithField(strconv.Itoa(idx)), tv, v)
+			default:
+				ctx.Reject("key type of Partial must be int for slice or array")
+			}
+		}
 	default:
 		ctx.Rejectf("expected map or struct but got %s", gotRV.Kind())
 	}

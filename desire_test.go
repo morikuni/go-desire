@@ -80,9 +80,13 @@ func TestDesire(t *testing.T) {
 			map[string]any{
 				"a": 1,
 				"b": []int{1, 2, 3},
+				"c": 4,
 			},
 			Partial{
-				"b": []int{1, 2, 3},
+				"a": 1,
+				"b": Partial{
+					1: 2,
+				},
 			},
 			nil,
 		},
@@ -121,9 +125,24 @@ func TestDesire(t *testing.T) {
 			},
 			Partial{
 				"c": 2,
+				2: Partial{
+					"a": 1,
+				},
 			},
 			[]Rejection{
 				{Path{"c"}, "expected key type string but got int"},
+				{Path{"2"}, "key type of Partial must be int for slice or array"},
+			},
+		},
+		"Partial ng index out of range": {
+			[]int{1, 2, 3},
+			Partial{
+				-1: 0,
+				3:  4,
+			},
+			[]Rejection{
+				{Path{"-1"}, "index out of range for size 3"},
+				{Path{"3"}, "index out of range for size 3"},
 			},
 		},
 		"List ok": {
@@ -228,6 +247,8 @@ func TestDesire(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			got := Desire(tt.got, tt.desire)
+			sort.Slice(got, func(i, j int) bool { return got[i].Path.String() < got[j].Path.String() })
+			sort.Slice(tt.want, func(i, j int) bool { return tt.want[i].Path.String() < tt.want[j].Path.String() })
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Errorf("(-want, +got)\n%s", diff)
 			}
