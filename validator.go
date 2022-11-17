@@ -141,3 +141,15 @@ func OneOf(candidates ...any) Validator {
 		ctx.Rejectf("expected one of %v but got %v", candidates, got)
 	})
 }
+
+func All(vs ...Validator) Validator {
+	return ValidatorFunc(func(ctx ValidationContext, got any) {
+		for _, v := range vs {
+			v.Validate(ctx, got)
+		}
+	})
+}
+
+func Any() Validator {
+	return ValidatorFunc(func(ctx ValidationContext, got any) {})
+}

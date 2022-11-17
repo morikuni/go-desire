@@ -1,6 +1,7 @@
 package desire
 
 import (
+	"sort"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -213,6 +214,23 @@ func TestDesire(t *testing.T) {
 			[]Rejection{
 				{nil, "expected one of [1 2 3] but got 0"},
 			},
+		},
+		"All ok": {
+			1,
+			All(NotZero(), OneOf(1, 2, 3)),
+			nil,
+		},
+		"All ng": {
+			0,
+			All(OneOf(0, 1, 2), NotZero()),
+			[]Rejection{
+				{nil, "expected non-zero value but got 0"},
+			},
+		},
+		"Any ok": {
+			[]any{1, "a", []int{}, ([]int)(nil), struct{}{}},
+			List{Any(), Any(), Any(), Any(), Any()},
+			nil,
 		},
 		"complex ok": {
 			map[string]any{
