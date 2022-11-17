@@ -34,7 +34,12 @@ func (p Partial) Validate(ctx ValidationContext, got any) {
 			switch k.(type) {
 			case string:
 				ks := k.(string)
-				tv := gotRV.FieldByName(ks).Interface()
+				fieldValue := gotRV.FieldByName(ks)
+				if !fieldValue.IsValid() {
+					ctx.WithField(ks).Rejectf("expected %v but undefined", v)
+					continue
+				}
+				tv := fieldValue.Interface()
 				Validate(ctx.WithField(ks), tv, v)
 			default:
 				ctx.Reject("key type of Partial must be string for struct")
@@ -62,7 +67,7 @@ func (p Partial) Validate(ctx ValidationContext, got any) {
 			}
 		}
 	default:
-		ctx.Rejectf("expected map or struct but got %s", gotRV.Kind())
+		ctx.Rejectf("expected slice, array, map or struct but got %s", gotRV.Kind())
 	}
 }
 
@@ -90,17 +95,6 @@ func (ls List) Validate(ctx ValidationContext, got any) {
 		}
 	default:
 		ctx.Rejectf("expected array or slice but got %s", gotRV.Kind())
-	}
-}
-
-func Validate(ctx ValidationContext, got, desire any) {
-	switch desire := desire.(type) {
-	case Validator:
-		desire.Validate(ctx, got)
-	default:
-		r := &cmpReporter{}
-		_ = cmp.Equal(desire, got, cmp.Reporter(r))
-		addRejections(ctx, r.rejections)
 	}
 }
 

@@ -21,6 +21,17 @@ func Desire(got, desire any) []Rejection {
 	return *root.rejections
 }
 
+func Validate(ctx ValidationContext, got, desire any) {
+	switch desire := desire.(type) {
+	case Validator:
+		desire.Validate(ctx, got)
+	default:
+		r := &cmpReporter{}
+		_ = cmp.Equal(desire, got, cmp.Reporter(r))
+		addRejections(ctx, r.rejections)
+	}
+}
+
 type Rejection struct {
 	Path   Path
 	Reason string
