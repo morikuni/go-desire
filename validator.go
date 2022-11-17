@@ -100,13 +100,7 @@ func Validate(ctx ValidationContext, got, desire any) {
 	default:
 		r := &cmpReporter{}
 		_ = cmp.Equal(desire, got, cmp.Reporter(r))
-		for i := range r.rejections {
-			tmpCtx := ctx
-			for _, path := range r.rejections[i].Path {
-				tmpCtx = tmpCtx.WithField(path)
-			}
-			tmpCtx.Reject(r.rejections[i].Reason)
-		}
+		addRejections(ctx, r.rejections)
 	}
 }
 
@@ -134,7 +128,8 @@ func NotZeroT[T comparable]() Validator {
 func OneOf(candidates ...any) Validator {
 	return ValidatorFunc(func(ctx ValidationContext, got any) {
 		for _, candidate := range candidates {
-			if candidate == got {
+			rs := Desire(got, candidate)
+			if len(rs) == 0 {
 				return
 			}
 		}

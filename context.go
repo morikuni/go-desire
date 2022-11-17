@@ -51,3 +51,13 @@ func (ctx validationContext) WithField(path string) ValidationContext {
 		rejections: ctx.rejections,
 	}
 }
+
+func addRejections(ctx ValidationContext, rs []Rejection) {
+	for _, r := range rs {
+		tmpCtx := ctx
+		for _, step := range r.Path {
+			tmpCtx = tmpCtx.WithField(step)
+		}
+		tmpCtx.Reject(r.Reason)
+	}
+}

@@ -203,9 +203,14 @@ func TestDesire(t *testing.T) {
 				{nil, "expected type int but got string"},
 			},
 		},
-		"OneOf ok": {
-			1,
+		"OneOf ok value": {
+			2,
 			OneOf(1, 2, 3),
+			nil,
+		},
+		"OneOf ok validator": {
+			2,
+			OneOf(1, NotZero(), 3),
 			nil,
 		},
 		"OneOf ng": {
