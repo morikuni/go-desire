@@ -327,9 +327,14 @@ func TestDesire(t *testing.T) {
 			got := Desire(tt.got, tt.desire)
 			sort.Slice(got, func(i, j int) bool { return got[i].Path.String() < got[j].Path.String() })
 			sort.Slice(tt.want, func(i, j int) bool { return tt.want[i].Path.String() < tt.want[j].Path.String() })
-			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("(-want, +got)\n%s", diff)
-			}
+			equal(t, got, tt.want)
 		})
+	}
+}
+
+func equal[T any](tb testing.TB, got, want T) {
+	tb.Helper()
+	if diff := cmp.Diff(got, want); diff != "" {
+		tb.Errorf("(-got +want)\n%s", diff)
 	}
 }
