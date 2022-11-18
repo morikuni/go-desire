@@ -4,9 +4,70 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
-
-	"github.com/google/go-cmp/cmp"
 )
+
+type Fields map[string]any
+
+func (fs Fields) Validate(ctx ValidationContext, got any) {
+	gotRV := reflect.ValueOf(got)
+	gotRV = reflect.Indirect(gotRV)
+	switch gotRV.Kind() {
+	case reflect.Map:
+		if gotRV.Type().Key().Kind() != reflect.String {
+			ctx.Rejectf("expected key type string but got %s", gotRV.Type().Key())
+		}
+		keySet := make(map[string]reflect.Value)
+		for _, k := range gotRV.MapKeys() {
+			keySet[k.String()] = k
+		}
+		for k := range fs {
+			if _, ok := keySet[k]; !ok {
+				keySet[k] = reflect.ValueOf(k)
+			}
+		}
+		for k, krv := range keySet {
+			gotIndex := gotRV.MapIndex(krv)
+			v, ok := fs[k]
+			if !ok {
+				ctx.WithField(k).Rejectf("expected undefined but exists with value %v", gotIndex.Interface())
+				continue
+			}
+			if !gotIndex.IsValid() {
+				ctx.WithField(k).Rejectf("expected %v but undefined", v)
+				continue
+			}
+			tv := gotIndex.Interface()
+			Validate(ctx.WithField(k), tv, v)
+		}
+	case reflect.Struct:
+		keySet := make(map[string]struct{})
+		gotRT := gotRV.Type()
+		for i, n := 0, gotRT.NumField(); i < n; i++ {
+			keySet[gotRT.Field(i).Name] = struct{}{}
+		}
+		for k := range fs {
+			if _, ok := keySet[k]; !ok {
+				keySet[k] = struct{}{}
+			}
+		}
+		for k := range keySet {
+			gotIndex := gotRV.FieldByName(k)
+			v, ok := fs[k]
+			if !ok {
+				ctx.WithField(k).Rejectf("expected undefined but exists with value %v", gotIndex.Interface())
+				continue
+			}
+			if !gotIndex.IsValid() {
+				ctx.WithField(k).Rejectf("expected %v but undefined", v)
+				continue
+			}
+			tv := gotIndex.Interface()
+			Validate(ctx.WithField(k), tv, v)
+		}
+	default:
+		ctx.Rejectf("expected map or struct but got %s", gotRV.Kind())
+	}
+}
 
 type Partial map[any]any
 
@@ -142,3 +203,39 @@ func All(vs ...Validator) Validator {
 func Any() Validator {
 	return ValidatorFunc(func(ctx ValidationContext, got any) {})
 }
+
+//
+//func Struct(strct any, override ...OverWrite) Validator {
+//	return ValidatorFunc(func(ctx ValidationContext, got any) {
+//		strctRV := reflect.ValueOf(strct)
+//		gotRV := reflect.ValueOf(got)
+//		if got, expected := gotRV.Type(), strctRV.Type(); got != expected {
+//			ctx.Rejectf("expected type %s but got %s", expected, got)
+//			return
+//		}
+//		strctRV = reflect.Indirect(strctRV)
+//		if strctRV.Kind() != reflect.Struct {
+//			ctx.Rejectf("expected struct but got %s", strctRV.Kind())
+//			return
+//		}
+//		gotRV = reflect.Indirect(gotRV)
+//		strctType := strctRV.Type()
+//		for i := 0; i < strctType.NumField(); i++ {
+//			field := strctType.Field(i)
+//			if field.PkgPath != "" {
+//				continue
+//			}
+//			gotField := gotRV.FieldByName(field.Name)
+//			if !gotField.IsValid() {
+//				ctx.WithField(field.Name).Rejectf("expected %v but undefined", strctRV.Field(i).Interface())
+//				continue
+//			}
+//			Validate(ctx.WithField(field.Name), gotField.Interface(), strctRV.Field(i).Interface())
+//		}
+//	})
+//}
+//
+//type OverWrite struct {
+//	Path      Path
+//	Validator Validator
+//}

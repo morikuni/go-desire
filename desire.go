@@ -3,6 +3,8 @@ package desire
 import (
 	"fmt"
 	"strings"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 type Validator interface {

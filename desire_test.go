@@ -7,6 +7,11 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
+type TestStruct struct {
+	Int    int
+	String string
+}
+
 func TestDesire(t *testing.T) {
 	for name, tt := range map[string]struct {
 		got    any
@@ -77,16 +82,54 @@ func TestDesire(t *testing.T) {
 				{Path{"b", "2"}, "expected 4 but got 3"},
 			},
 		},
+		"Fields ok": {
+			map[string]any{
+				"a": 1,
+				"b": TestStruct{
+					Int:    1,
+					String: "c",
+				},
+			},
+			Fields{
+				"a": 1,
+				"b": Fields{
+					"Int":    1,
+					"String": "c",
+				},
+			},
+			nil,
+		},
+		"Fields ng": {
+			map[string]any{
+				"a": 1,
+				"b": TestStruct{
+					Int:    1,
+					String: "c",
+				},
+			},
+			Fields{
+				"b": Fields{
+					"String": "c",
+				},
+			},
+			[]Rejection{
+				{Path{"a"}, "expected undefined but exists with value 1"},
+				{Path{"b", "Int"}, "expected undefined but exists with value 1"},
+			},
+		},
 		"Partial ok": {
 			map[string]any{
 				"a": 1,
-				"b": []int{1, 2, 3},
+				"b": TestStruct{
+					Int:    1,
+					String: "c",
+				},
 				"c": 4,
 			},
 			Partial{
 				"a": 1,
 				"b": Partial{
-					1: 2,
+					"Int": 1,
 				},
 			},
 			nil,
@@ -94,27 +137,39 @@ func TestDesire(t *testing.T) {
 		"Partial ng value": {
 			map[string]any{
 				"a": 1,
-				"b": []int{1, 2, 3},
+				"b": TestStruct{
+					Int:    1,
+					String: "c",
+				},
 			},
 			Partial{
-				"b": []int{0, 2, 3},
+				"b": TestStruct{
+					Int:    0,
+					String: "c",
+				},
 			},
 			[]Rejection{
-				{Path{"b", "0"}, "expected 0 but got 1"},
+				{Path{"b", "Int"}, "expected 0 but got 1"},
 			},
 		},
 		"Partial ng undefined key": {
 			map[any]any{
-				"a":  1,
-				"b":  []int{1, 2, 3},
+				"a": 1,
+				"b": TestStruct{
+					Int:    1,
+					String: "c",
+				},
 				"10": 4,
 			},
 			Partial{
-				"b": []int{1, 2, 3},
+				"b": Partial{
+					"Float": 1.1,
+				},
 				"c": 2,
 				10:  4,
 			},
 			[]Rejection{
+				{Path{"b", "Float"}, "expected 1.1 but undefined"},
 				{Path{"c"}, "expected 2 but undefined"},
 				{Path{"10"}, "expected 4 but undefined"},
 			},
